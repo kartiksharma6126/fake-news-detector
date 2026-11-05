@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Paste a news headline or article and get a pattern-based REAL or FAKE verdict with a confidence score and the words that drove the decision.">
+  <title>Verification Desk — Fake News Detector</title>
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b100d">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#edf0ea">
+
+  <!-- Set the theme BEFORE first paint (remembers the user's choice, no flash). -->
+  <script>
+    (function () {
+      var theme = "dark";
+      try {
+        var saved = window.localStorage.getItem("vd-theme");
+        if (saved === "light" || saved === "dark") {
+          theme = saved;
+        } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
+          theme = "light";
+        }
+      } catch (e) { /* localStorage unavailable — keep the default */ }
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+
+  <!-- Fonts: Space Grotesk (display) + IBM Plex Sans (body) + IBM Plex Mono (data) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to the analyzer</a>
+
+  <!-- Graceful fallback when JavaScript is disabled -->
+  <noscript>
+    <div class="noscript-banner">
+      <strong>JavaScript is disabled.</strong> The analyzer needs JavaScript to send your
+      text to the model and show the verdict. Please enable JavaScript and reload the page.
+    </div>
+  </noscript>
+
+  <!-- ======================= TOP PRESS BAR ======================= -->
+  <div class="topbar">
+    <div class="container topbar-inner">
+      <span id="topbar-date">TODAY'S EDITION</span>
+      <span class="topbar-mid">EST. 2026 · COLLEGE PROJECT EDITION</span>
+      <span>FLASK + SCIKIT-LEARN</span>
+    </div>
+  </div>
+
+  <!-- ======================= MASTHEAD ======================= -->
+  <header class="masthead">
+    <div class="container masthead-inner">
+      <div class="masthead-brand">
+        <p class="kicker"><span class="kicker-cursor" aria-hidden="true"></span>AUTOMATED NEWS ANALYSIS</p>
+        <h1 class="masthead-title">The Verification Desk<span class="title-dot">.</span></h1>
+        <p class="masthead-tagline">
+          Paste a headline or article. Get a pattern-based
+          <strong class="t-real">REAL</strong> / <strong class="t-fake">FAKE</strong> verdict —
+          and see exactly which words tipped the scale.
+        </p>
+      </div>
+      <div class="masthead-controls">
+        <p class="status-pill" id="model-status">
+          <span class="status-dot" id="status-dot" aria-hidden="true"></span>
+          <span id="status-label">Checking model…</span>
+        </p>
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false"
+                aria-label="Switch between dark and light mode">
+          <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+          </svg>
+          <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======================= WIRE TICKER (decorative) ======================= -->
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track" id="ticker-track">
+      <span class="tick"><b class="tick-tag tag-fake">FAKE</b>Doctors FURIOUS over miracle kitchen cure — “share before it’s deleted!”</span>
+      <span class="tick"><b class="tick-tag tag-real">REAL</b>Council approves $48M transit plan after Tuesday vote</span>
+      <span class="tick"><b class="tick-tag tag-fake">FAKE</b>SHOCKING: tracking chips found in library cards, insiders claim</span>
+      <span class="tick"><b class="tick-tag tag-real">REAL</b>Study links daily walking to 18% lower heart risk</span>
+      <span class="tick"><b class="tick-tag tag-fake">FAKE</b>Leaked audio allegedly reveals global currency reset plan</span>
+      <span class="tick"><b class="tick-tag tag-real">REAL</b>Unemployment dips to 4.1% as employers add 156,000 jobs</span>
+      <span class="tick"><b class="tick-tag tag-fake">FAKE</b>Moon landing filmed in desert studio, director allegedly confesses</span>
+      <span class="tick"><b class="tick-tag tag-real">REAL</b>Water vapor detected on exoplanet 120 light-years away</span>
+    </div>
+  </div>
+
+  <!-- ======================= MAIN TOOL ======================= -->
+  <main id="main" class="container">
+    <section class="desk-grid" aria-label="News analyzer">
+
+      <!-- ============ INPUT PANEL ============ -->
+      <section class="panel panel-input" aria-labelledby="input-heading">
+        <header class="panel-head">
+          <h2 id="input-heading" class="panel-title">Submit text</h2>
+          <p class="panel-sub">Headline, article body, or both — at least 20 words.</p>
+        </header>
+
+        <label class="field-label" for="news-input">News text to analyze</label>
+        <textarea id="news-input" class="news-input" rows="9"
+          placeholder="Paste a news headline or full article text here…"
+          aria-describedby="input-hint input-counts"></textarea>
+
+        <div class="input-meta">
+          <p class="hint" id="input-hint">Tip: press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to analyze.</p>
+          <p class="counts" id="input-counts">
+            <span id="word-count">0</span> words · <span id="char-count">0</span> chars
+            <span class="min-note" id="min-note">(min 20 words)</span>
+          </p>
+        </div>
+
+        <fieldset class="examples">
+          <legend class="examples-legend">Try an example</legend>
+          <div class="examples-row">
+            <button type="button" class="chip-btn" data-example="real">Real-sounding report</button>
+            <button type="button" class="chip-btn" data-example="fake-health">Fake health hoax</button>
+            <button type="button" class="chip-btn" data-example="fake-conspiracy">Fake conspiracy post</button>
+          </div>
+        </fieldset>
+
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="analyze-btn">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18"></path>
+            </svg>
+            <span id="analyze-label">Analyze</span>
+          </button>
+          <button type="button" class="btn btn-ghost" id="clear-btn">Clear</button>
+        </div>
+      </section>
+
+      <!-- ============ RESULT PANEL ============ -->
+      <section class="panel panel-result" id="panel-result" aria-labelledby="result-heading">
+        <header class="panel-head">
+          <h2 id="result-heading" class="panel-title">Verification report</h2>
+          <p class="panel-sub" id="result-sub">Waiting for text…</p>
+        </header>
+
+        <!-- aria-live region so screen readers announce results automatically -->
+        <div id="result-region" role="status" aria-live="polite" aria-atomic="true">
+
+          <!-- EMPTY state -->
+          <div class="result-state state-empty" id="state-empty">
+            <div class="empty-box">
+              <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <path d="m21 21-4.3-4.3M8 11h6M11 8v6"></path>
+              </svg>
+              <p class="empty-title">No analysis yet</p>
+              <p class="empty-hint">Your verdict, confidence and key signals will appear here.</p>
+            </div>
+          </div>
+
+          <!-- LOADING state -->
+          <div class="result-state state-loading" id="state-loading" hidden>
+            <div class="spinner" aria-hidden="true"></div>
+            <p class="loading-text" id="loading-text">Cleaning text…</p>
+            <div class="scan-lines" aria-hidden="true"><i></i><i></i><i></i></div>
+          </div>
+
+          <!-- ERROR state -->
+          <div class="result-state state-error" id="state-error" hidden>
+            <p class="error-flag">
+              <svg class="icon icon-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path>
+                <path d="M12 9v4M12 17h.01"></path>
+              </svg>
+              Couldn’t analyze
+            </p>
+            <p class="error-text" id="error-text"></p>
+          </div>
+
+          <!-- DONE state -->
+          <div class="result-state state-done" id="state-done" hidden>
+            <div class="verdict-row">
+              <span class="stamp" id="verdict-stamp">REAL</span>
+              <div class="verdict-copy">
+                <p class="verdict-sentence" id="verdict-sentence"></p>
+                <p class="verdict-note">Pattern-based estimate — not proof of truth.</p>
+              </div>
+            </div>
+
+            <div class="confidence">
+              <div class="confidence-head">
+                <span class="confidence-label">Confidence</span>
+                <span class="confidence-value" id="confidence-value">0%</span>
+              </div>
+              <div class="meter" id="meter" role="img" aria-label="">
+                <div class="meter-fill" id="meter-fill"></div>
+              </div>
+            </div>
+
+            <div class="signals">
+              <p class="signals-label">Key signals in this text</p>
+              <ul class="signal-chips" id="signal-chips"></ul>
+            </div>
+
+            <p class="report-meta" id="report-meta"></p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- ============ HOW IT WORKS ============ -->
+    <section class="how" aria-labelledby="how-heading">
+      <header class="section-head">
+        <p class="kicker"><span class="kicker-cursor" aria-hidden="true"></span>UNDER THE HOOD</p>
+        <h2 id="how-heading" class="section-title">How the model decides</h2>
+      </header>
+
+      <div class="how-grid">
+        <aside class="spec-sheet" aria-label="Model specifications">
+          <h3 class="spec-title">// SPEC SHEET</h3>
+          <dl class="spec-list">
+            <div class="spec-row"><dt>Model</dt><dd>Logistic Regression</dd></div>
+            <div class="spec-row"><dt>Features</dt><dd>TF-IDF, words + bigrams</dd></div>
+            <div class="spec-row"><dt>Vocabulary</dt><dd>up to 50,000 terms</dd></div>
+            <div class="spec-row"><dt>Training split</dt><dd>80% train / 20% test</dd></div>
+            <div class="spec-row"><dt>Dataset</dt><dd id="spec-dataset">ISOT (Kaggle) or built-in sample</dd></div>
+            <div class="spec-row"><dt>Served by</dt><dd>Flask + joblib</dd></div>
+          </dl>
+        </aside>
+
+        <ol class="steps">
+          <li class="step">
+            <span class="step-num" aria-hidden="true">01</span>
+            <div>
+              <h3 class="step-title">Clean the text</h3>
+              <p>Lowercase it, strip URLs, punctuation and source tags like “(Reuters)”, then
+              drop common stopwords. This removes shortcuts so the model can’t just memorize
+              which news agency wrote a story.</p>
+            </div>
+          </li>
+          <li class="step">
+            <span class="step-num" aria-hidden="true">02</span>
+            <div>
+              <h3 class="step-title">Turn words into numbers</h3>
+              <p>TF-IDF scores every word and two-word phrase: everyday words get low scores,
+              distinctive ones get high scores. The article becomes a vector of weighted terms.</p>
+            </div>
+          </li>
+          <li class="step">
+            <span class="step-num" aria-hidden="true">03</span>
+            <div>
+              <h3 class="step-title">Weigh the evidence</h3>
+              <p>Logistic regression has one learned weight per term. It adds up the weighted
+              words in your text, converts the total into a probability, and we show the
+              strongest words as your explanation.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ============ DISCLAIMER ============ -->
+    <aside class="disclaimer" role="note" aria-labelledby="disclaimer-heading">
+      <svg class="icon icon-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path>
+        <path d="M12 9v4M12 17h.01"></path>
+      </svg>
+      <div>
+        <h2 id="disclaimer-heading" class="disclaimer-title">Read before you trust it</h2>
+        <p>This tool predicts based on writing patterns and is not a guarantee of truth.
+        Always verify with trusted sources.</p>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ======================= FOOTER ======================= -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <p>Verification Desk · Flask + scikit-learn college project</p>
+      <p>Training data: “Fake and Real News Dataset” (ISOT) via Kaggle · Built for learning, not production fact-checking</p>
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

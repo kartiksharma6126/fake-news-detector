@@ -1,0 +1,13 @@
+# Fake News Detector — pinned dependencies (Python 3.10+)
+#
+# NOTE for Windows users: gunicorn (last line) only installs on Linux/macOS.
+# If it fails on Windows, just delete that line — it is only needed for
+# deployment, not for running or testing the project locally.
+
+Flask
+scikit-learn
+pandas
+numpy
+joblib
+pytest
+gunicorn

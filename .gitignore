@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.env
+
+# Datasets are large — download separately (see README)
+data/*.csv
+
+# Trained model files: committed by default so deploys are one-click.
+# If you'd rather not commit them, uncomment the next line — the app will
+# then auto-train at startup.
+# model/*.pkl
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
