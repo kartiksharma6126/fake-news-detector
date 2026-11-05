@@ -4,6 +4,12 @@ A full-stack college project: paste a news headline or article and get a
 **REAL / FAKE** verdict with a **confidence percentage** and the **key words**
 that influenced the decision.
 
+> Built with AI assistance. I trained the model on the ISOT dataset, tested it, and deployed it as part of my college project.
+
+**Model accuracy:** 98.85% (tested on 20% of the ISOT dataset, 8,980 articles)
+
+> Note: High accuracy on this dataset doesn't guarantee the same result on news from other sources. This tool predicts from writing patterns and is not proof of truth.
+
 **Stack:** Python 3.10+ · Flask · scikit-learn (TF-IDF + Logistic Regression) ·
 pandas · joblib · plain HTML/CSS/JavaScript (no build step, no Node).
 
