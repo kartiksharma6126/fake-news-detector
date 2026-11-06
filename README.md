@@ -1,5 +1,9 @@
 # Verification Desk — Fake News Detector
 
+🌐 **Live demo:** https://fake-news-detector-kartiksharma.onrender.com
+
+> The demo runs on a free server, so the first visit can take up to a minute to wake up.
+
 A full-stack college project: paste a news headline or article and get a
 **REAL / FAKE** verdict with a **confidence percentage** and the **key words**
 that influenced the decision.
