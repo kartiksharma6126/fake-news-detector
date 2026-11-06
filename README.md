@@ -1,4 +1,4 @@
-# Verification Desk — Fake News Detector
+# The Verification Desk
 
 🌐 **Live demo:** https://fake-news-detector-kartiksharma.onrender.com
 
